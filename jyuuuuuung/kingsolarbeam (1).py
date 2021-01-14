@@ -108,8 +108,8 @@ input_array = np.array(input_data)
 output_array = np.reshape(np.array(output_data),(1086,96,1))
 
 # 데이터셋 분배
-train_x, test_x, train_y, test_y = train_test_split(input_array, output_array, test_size = 0.1,shuffle = False)
-train_x, val_x, train_y, val_y = train_test_split(train_x, train_y, test_size=0.1,shuffle=False)
+train_x, test_x, train_y, test_y = train_test_split(input_array, output_array, test_size = 78/1086,shuffle = False)
+train_x, val_x, train_y, val_y = train_test_split(train_x, train_y, test_size=48*3/1008,shuffle=False)
 
 # x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1],1))
 # train_x = train_x.reshape((train_x.shape[0], 7, 1, 48, 6))
@@ -136,21 +136,23 @@ def tilted_loss(q,y,f):
     return K.mean(K.maximum(q*e, (q-1)*e), axis=-1)
 callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=5)
 
+n_batch = 8
+
 for i, q in enumerate(np.arange(0.1, 1, 0.1)):
   print(q)
   model = Sequential()
   # for l in range(2):
-  #     model.add(LSTM(32, batch_input_shape=(1, 336, 8), stateful=True, return_sequences=True))
+  #     model.add(LSTM(32, batch_input_shape=(8, 336, 8), stateful=True, return_sequences=True))
   #     model.add(Dropout(0.3))
-  model.add(LSTM(32, batch_input_shape=(1, 336, 8), stateful=True))
-  # model.add(Dropout(0.3))
+  model.add(LSTM(32, batch_input_shape=(n_batch, 336, 8), stateful=True))
+  model.add(Dropout(0.3))
   model.add(Dense(96))
   model.compile(loss=lambda y,f: tilted_loss(q,y,f), optimizer='adagrad')
-  # for j in range(10):
+  # for j in range(200):
   #   # model.fit(train_x, train_y, epochs=1, batch_size=1, shuffle=False, callbacks=[custom_hist], validation_data=(val_x, val_y))
   #   model.fit(train_x, train_y, epochs=1, batch_size=1, shuffle=False, validation_data=(val_x, val_y))
-  #   model.reset_states()
-  model.fit(train_x, train_y, epochs=100, batch_size=1, shuffle=False, validation_data=(val_x, val_y), callbacks=[callback], verbose=2)
+  # #   model.reset_states()
+  model.fit(train_x, train_y, epochs=100, batch_size=n_batch, shuffle=False, validation_data=(val_x, val_y), callbacks=[callback], verbose=2)
   predictions = []
   for k in range(81):
     prediction = model.predict(np.array([test[k]]), batch_size=1)
